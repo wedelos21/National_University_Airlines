@@ -9,6 +9,14 @@ Unlike commercial scheduling systems, this app is **free**, **offline**, and doe
 
 ---
 
+## 🖼️ Application Preview
+
+![National University Airlines Home Screen](screenshots/screenshot.png)
+
+*Figure: Current Home Screen interface showing available flights.*
+
+---
+
 ## 👥 Team 2 – CSC449 Software Engineering
 
 ---
