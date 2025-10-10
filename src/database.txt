@@ -1,5 +1,5 @@
 # flightId,flightNumber,seatNumber,status,firstName,lastName,dateOfBirth
-F001,NU100,1A,AVAILABLE,,,
+F001,NU100,1A,BOOKED,Test,Passenger,2000-01-01
 F001,NU100,1B,AVAILABLE,,,
 F001,NU100,1C,AVAILABLE,,,
 F001,NU100,1D,AVAILABLE,,,
