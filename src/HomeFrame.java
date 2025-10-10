@@ -16,7 +16,7 @@ public class HomeFrame extends JFrame {
         super("National University Airlines");
         this.db = db;
         initComponents();
-        loadFlights();
+        loadFlights(); // ✅ Automatically load data when home screen is created
         setSize(640, 400);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -73,7 +73,18 @@ public class HomeFrame extends JFrame {
     private void loadFlights() {
         listModel.clear();
         for (Flight f : db.getFlights()) listModel.addElement(f);
-        if (!listModel.isEmpty()) flightList.setSelectedIndex(0);
+
+        if (!listModel.isEmpty()) {
+            flightList.setSelectedIndex(0);
+        } else {
+            //  Message if database.txt had no flights
+            JOptionPane.showMessageDialog(
+                this,
+                "No flights were loaded.\nA default database will be created when you first save.",
+                "No Flights Loaded",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+        }
     }
 
     /** Reloads from database.txt (handy during development). */
@@ -88,9 +99,12 @@ public class HomeFrame extends JFrame {
             JOptionPane.showMessageDialog(this, "Please select a flight.", "No selection", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        // Open Seats screen (Issue #8 will flesh this out)
+
+        // Open Seats screen
         SeatsFrame seats = new SeatsFrame(db, selected.getId(), selected.getFlightNumber());
         seats.setVisible(true);
-        this.dispose(); // close Home after navigating (optional; or keep it open)
+
+        // Close home after navigating (can keep open if you prefer)
+        this.dispose();
     }
 }
