@@ -87,7 +87,7 @@ public class HomeFrame extends JFrame {
         }
     }
 
-    /** Reloads from database.txt (handy during development). */
+    /** Reloads from database.txt. */
     private void reloadFromDisk() {
         db.load();
         loadFlights();
@@ -104,7 +104,7 @@ public class HomeFrame extends JFrame {
         SeatsFrame seats = new SeatsFrame(db, selected.getId(), selected.getFlightNumber());
         seats.setVisible(true);
 
-        // Close home after navigating (can keep open if you prefer)
+        // Close home after navigating
         this.dispose();
     }
 }
