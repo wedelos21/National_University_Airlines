@@ -51,6 +51,11 @@ Developed collaboratively as part of a group assignment to demonstrate modular d
 
 ---
 
+## 🧩 Architecture Overview
+The project follows a **modular, layered design**:
+
+---
+
 ## 🚀 Quick Setup Guide
 
 ### 🔧 1. Install Java
@@ -64,8 +69,5 @@ Clone the repository from GitHub:
 git clone https://github.com/Mark-Langston/National_University_Airlines.git
 cd National_University_Airlines/src
 
----
 
-## 🧩 Architecture Overview
-The project follows a **modular, layered design**:
 
