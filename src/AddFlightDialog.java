@@ -1,25 +1,19 @@
 import javax.swing.*;
 import java.awt.*;
+import java.util.Set;
 
 /**
  * AddFlightDialog
  * ---------------
- * Allows schedulers to create a new flight by entering:
- *   - Flight ID (e.g., F003)
- *   - Flight Number (e.g., NU310)
- *   - Starting Row, Ending Row (numeric)
- *   - Seat Letters (e.g., ABCDEF)
- *
- * Validation ensures all fields are filled correctly.
- * On success, calls db.addFlight(...) and closes the dialog.
+ * Validates and creates new flights via DatabaseService.addFlight(...).
  */
 public class AddFlightDialog extends JDialog {
     private final DatabaseService db;
-    private final JTextField idField = new JTextField(10);
-    private final JTextField numberField = new JTextField(10);
-    private final JTextField startRowField = new JTextField(5);
-    private final JTextField endRowField = new JTextField(5);
-    private final JTextField lettersField = new JTextField(10);
+    private final JTextField idField = new JTextField(12);
+    private final JTextField numberField = new JTextField(12);
+    private final JTextField startRowField = new JTextField(6);
+    private final JTextField endRowField = new JTextField(6);
+    private final JTextField lettersField = new JTextField(12);
 
     private final JButton saveBtn = new JButton("Save");
     private final JButton cancelBtn = new JButton("Cancel");
@@ -28,7 +22,7 @@ public class AddFlightDialog extends JDialog {
         super(owner, "Add Flight", true);
         this.db = db;
         initComponents();
-        setSize(420, 320);
+        setSize(460, 340);
         setLocationRelativeTo(owner);
     }
 
@@ -37,10 +31,17 @@ public class AddFlightDialog extends JDialog {
         header.setFont(header.getFont().deriveFont(Font.BOLD, 18f));
         header.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
+        // Tooltips to guide the scheduler
+        idField.setToolTipText("Flight ID (e.g., F003 or INTL-01; letters, numbers, dashes)");
+        numberField.setToolTipText("Flight Number (e.g., NU310)");
+        startRowField.setToolTipText("First row number (>= 1)");
+        endRowField.setToolTipText("Last row number (>= start row, reasonable size)");
+        lettersField.setToolTipText("Seat letters, uppercase, unique, up to 10 (e.g., ABCDEF)");
+
         JPanel form = new JPanel(new GridBagLayout());
         form.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         GridBagConstraints gc = new GridBagConstraints();
-        gc.insets = new Insets(6, 6, 6, 6);
+        gc.insets = new Insets(8, 6, 8, 6);
         gc.anchor = GridBagConstraints.LINE_END;
         gc.gridx = 0; gc.gridy = 0;
         form.add(new JLabel("Flight ID:"), gc);
@@ -82,11 +83,17 @@ public class AddFlightDialog extends JDialog {
         String number = numberField.getText().trim();
         String startStr = startRowField.getText().trim();
         String endStr = endRowField.getText().trim();
-        String letters = lettersField.getText().trim().toUpperCase();
+        String lettersRaw = lettersField.getText().trim();
 
-        // alidation rules
-        if (id.isEmpty() || number.isEmpty() || startStr.isEmpty() || endStr.isEmpty() || letters.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "All fields are required.", "Validation", JOptionPane.WARNING_MESSAGE);
+        // Validate fields
+        if (!ValidationUtils.isValidFlightId(id)) {
+            warn("Flight ID is required and may only contain letters, numbers, and dashes (e.g., F003, INTL-01).");
+            idField.requestFocusInWindow();
+            return;
+        }
+        if (!ValidationUtils.isValidFlightNumber(number)) {
+            warn("Flight Number must follow pattern NU### (e.g., NU310).");
+            numberField.requestFocusInWindow();
             return;
         }
 
@@ -95,40 +102,48 @@ public class AddFlightDialog extends JDialog {
             startRow = Integer.parseInt(startStr);
             endRow = Integer.parseInt(endStr);
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Row numbers must be integers.", "Validation", JOptionPane.WARNING_MESSAGE);
+            warn("Row numbers must be integers.");
+            startRowField.requestFocusInWindow();
+            return;
+        }
+        if (!ValidationUtils.isValidRowRange(startRow, endRow)) {
+            warn("Invalid row range. Start row must be ≥ 1, end row ≥ start row, and the total range reasonable (≤ 200 rows).");
+            startRowField.requestFocusInWindow();
             return;
         }
 
-        if (startRow < 1 || endRow < startRow) {
-            JOptionPane.showMessageDialog(this, "Invalid row range. End row must be ≥ start row and both ≥ 1.", "Validation", JOptionPane.WARNING_MESSAGE);
+        Set<Character> uniqueLetters = ValidationUtils.parseSeatLettersUnique(lettersRaw);
+        if (uniqueLetters.isEmpty()) {
+            warn("Seat letters must be uppercase A–Z, unique, and up to 10 characters (e.g., ABCDEF).");
+            lettersField.requestFocusInWindow();
             return;
         }
 
-        if (!id.matches("[A-Za-z0-9\\-]+")) {
-            JOptionPane.showMessageDialog(this, "Flight ID may only contain letters, numbers, and dashes.", "Validation", JOptionPane.WARNING_MESSAGE);
+        // Convert Set<Character> to char[]
+        char[] letters = new char[uniqueLetters.size()];
+        int i = 0;
+        for (Character c : uniqueLetters) letters[i++] = c;
+
+        // Call backend
+        boolean ok = db.addFlight(id, number, startRow, endRow, letters);
+        if (!ok) {
+            warn("Could not add flight. It may already exist or inputs are invalid.");
             return;
         }
 
-        if (!number.matches("NU\\d+")) {
-            JOptionPane.showMessageDialog(this, "Flight Number must follow pattern NU### (e.g., NU245).", "Validation", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        if (!letters.matches("[A-Z]+") || letters.length() > 10) {
-            JOptionPane.showMessageDialog(this, "Seat letters must be uppercase A–Z (max 10).", "Validation", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        // Future wiring: db.addFlight(id, number, startRow, endRow, letters.toCharArray());
         JOptionPane.showMessageDialog(this,
-                "Flight added successfully!\n\n" +
-                "Flight ID: " + id + "\nFlight Number: " + number +
-                "\nRows: " + startRow + "–" + endRow +
-                "\nSeats: " + letters,
-                "Flight Created",
+                "Flight created:\n" +
+                "ID: " + id + "\n" +
+                "Number: " + number + "\n" +
+                "Rows: " + startRow + "–" + endRow + "\n" +
+                "Seats: " + new String(letters),
+                "Success",
                 JOptionPane.INFORMATION_MESSAGE);
-
         dispose();
+    }
+
+    private void warn(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Validation", JOptionPane.WARNING_MESSAGE);
     }
 
     public void openModal() {
