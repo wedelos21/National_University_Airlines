@@ -2,19 +2,20 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.KeyEvent;
-import java.lang.reflect.Method;
 
 /**
- * Home screen showing all flights. Selecting a flight opens SeatsFrame.
- * Adds: Delete Flight (with confirm). Uses reflection so it compiles before #16.
+ * Home screen showing all flights.
+ * Adds: Add Flight, Delete Flight (with confirm), Refresh, Open.
  */
 public class HomeFrame extends JFrame {
     private final DatabaseService db;
     private final DefaultListModel<Flight> listModel = new DefaultListModel<>();
     private final JList<Flight> flightList = new JList<>(listModel);
-    private final JButton openBtn = new JButton("Open Flight");
-    private final JButton deleteBtn = new JButton("Delete Flight"); // NEW
+
+    private final JButton openBtn   = new JButton("Open Flight");
+    private final JButton addBtn    = new JButton("Add Flight");
+    private final JButton deleteBtn = new JButton("Delete Flight");
+    private final JButton refreshBtn = new JButton("Refresh");
 
     public HomeFrame(DatabaseService db) {
         super("National University Airlines");
@@ -22,23 +23,33 @@ public class HomeFrame extends JFrame {
         setJMenuBar(buildMenuBar());
         initComponents();
         loadFlights();
-        setSize(680, 420);
+        setSize(720, 460);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
     private JMenuBar buildMenuBar() {
         JMenuBar bar = new JMenuBar();
+
         JMenu file = new JMenu("File");
         file.setMnemonic('F');
 
+        JMenuItem add = new JMenuItem("Add Flight");
+        add.addActionListener(e -> onAddFlight());
+
+        JMenuItem del = new JMenuItem("Delete Flight");
+        del.addActionListener(e -> onDeleteFlight());
+
         JMenuItem exit = new JMenuItem("Exit");
-        exit.setMnemonic('E');
         int mask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
-        exit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, mask));
+        exit.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_Q, mask));
         exit.addActionListener(e -> confirmAndExit());
 
+        file.add(add);
+        file.add(del);
+        file.addSeparator();
         file.add(exit);
+
         bar.add(file);
         return bar;
     }
@@ -85,14 +96,12 @@ public class HomeFrame extends JFrame {
             }
         });
 
-        // Buttons
+        // Buttons row
         openBtn.addActionListener(e -> openSelectedFlight());
-
-        JButton refreshBtn = new JButton("Refresh");
         refreshBtn.addActionListener(e -> reloadFromDisk());
-
-        deleteBtn.setEnabled(false); // enabled only when a flight is selected
-        deleteBtn.addActionListener(e -> deleteSelectedFlight());
+        addBtn.addActionListener(e -> onAddFlight());
+        deleteBtn.addActionListener(e -> onDeleteFlight());
+        deleteBtn.setEnabled(false);
 
         // Enable/disable Delete based on selection
         flightList.addListSelectionListener(e -> {
@@ -103,6 +112,7 @@ public class HomeFrame extends JFrame {
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttons.add(refreshBtn);
+        buttons.add(addBtn);
         buttons.add(deleteBtn);
         buttons.add(openBtn);
 
@@ -133,7 +143,6 @@ public class HomeFrame extends JFrame {
         }
     }
 
-    /** Reloads from database.txt */
     private void reloadFromDisk() {
         db.load();
         loadFlights();
@@ -150,8 +159,18 @@ public class HomeFrame extends JFrame {
         this.dispose();
     }
 
-    // -------- Delete Flight flow --------
-    private void deleteSelectedFlight() {
+    // ---------- Add/Delete handlers ----------
+
+    private void onAddFlight() {
+        AddFlightDialog dlg = new AddFlightDialog(this, db);
+        dlg.openModal();
+        // After dialog closes, refresh and try to select the newly added flight by ID
+        String previousId = getSelectedFlightId();
+        reloadFromDisk();
+        if (previousId != null) selectFlightById(previousId); // fallback to previous
+    }
+
+    private void onDeleteFlight() {
         Flight selected = flightList.getSelectedValue();
         if (selected == null) {
             JOptionPane.showMessageDialog(this, "Please select a flight to delete.", "No selection", JOptionPane.INFORMATION_MESSAGE);
@@ -167,29 +186,31 @@ public class HomeFrame extends JFrame {
         );
         if (confirm != JOptionPane.YES_OPTION) return;
 
-        // Runtime check
-        try {
-            Method m = DatabaseService.class.getMethod("deleteFlight", String.class);
-            Object result = m.invoke(db, selected.getId());
-            boolean ok = (result instanceof Boolean) ? (Boolean) result : false;
-            if (!ok) {
-                JOptionPane.showMessageDialog(this, "Delete failed. The flight may not exist or could not be removed.", "Delete Flight", JOptionPane.ERROR_MESSAGE);
+        boolean ok = db.deleteFlight(selected.getId());
+        if (!ok) {
+            JOptionPane.showMessageDialog(this, "Delete failed. The flight may not exist or could not be removed.", "Delete Flight", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        // Refresh list
+        reloadFromDisk();
+        if (!listModel.isEmpty()) flightList.setSelectedIndex(Math.min(flightList.getModel().getSize() - 1, 0));
+        JOptionPane.showMessageDialog(this, "Flight deleted.", "Delete Flight", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private String getSelectedFlightId() {
+        Flight f = flightList.getSelectedValue();
+        return f == null ? null : f.getId();
+    }
+
+    private void selectFlightById(String flightId) {
+        if (flightId == null) return;
+        for (int i = 0; i < listModel.getSize(); i++) {
+            Flight f = listModel.get(i);
+            if (flightId.equalsIgnoreCase(f.getId())) {
+                flightList.setSelectedIndex(i);
+                flightList.ensureIndexIsVisible(i);
                 return;
             }
-            // Reload and update selection
-            reloadFromDisk();
-            JOptionPane.showMessageDialog(this, "Flight deleted.", "Delete Flight", JOptionPane.INFORMATION_MESSAGE);
-        } catch (NoSuchMethodException nsme) {
-            // Backend not added yet (Issue #16)
-            JOptionPane.showMessageDialog(
-                this,
-                "Delete will be enabled after backend wiring (Issue #16).\nFor now, this is a placeholder action.",
-                "Delete Flight (Pending Backend)",
-                JOptionPane.INFORMATION_MESSAGE
-            );
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "An unexpected error occurred while deleting the flight:\n" + ex.getMessage(),
-                    "Delete Flight", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
