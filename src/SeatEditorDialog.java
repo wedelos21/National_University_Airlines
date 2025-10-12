@@ -1,16 +1,14 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 
 /**
- * SeatEditorDialog
- * - Modal dialog to edit passenger info for a seat
- * - Supports two paths:
- *   1) Book seat: requires First, Last, DOB (yyyy-MM-dd) -> autosave
- *   2) Release seat: clears passenger, marks AVAILABLE -> autosave
+ * SeatEditorDialog – Validation Added 10-12-2025
+ * - Names must be non-empty (when booking) and pass a simple name rule.
+ * - DOB must be yyyy-MM-dd, real date, and not in the future.
+ * - Clear visual feedback: invalid fields are highlighted and focused.
+ * - Release checkbox is never pre-selected; user opts in.
  */
 public class SeatEditorDialog extends JDialog {
     private final DatabaseService db;
@@ -28,6 +26,10 @@ public class SeatEditorDialog extends JDialog {
     private final JButton saveBtn   = new JButton("Save");
     private final JButton cancelBtn = new JButton("Cancel");
 
+    // colors for validation feedback
+    private final Color normalBg;
+    private final Color invalidBg = new Color(255, 230, 230);
+
     public SeatEditorDialog(Frame owner, DatabaseService db, String flightId, String flightNumber, String seatNumber) {
         super(owner, "Edit Seat – " + seatNumber + " / " + flightNumber, true);
         this.db = db;
@@ -35,9 +37,12 @@ public class SeatEditorDialog extends JDialog {
         this.flightNumber = flightNumber;
         this.seatNumber = seatNumber;
 
+        // stash default bg color before we ever mutate
+        normalBg = firstField.getBackground();
+
         initComponents();
         loadExistingValues();
-        setSize(480, 280);
+        setSize(520, 300);
         setLocationRelativeTo(owner);
         wireKeyShortcuts();
     }
@@ -48,11 +53,16 @@ public class SeatEditorDialog extends JDialog {
         header.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         header.setFont(header.getFont().deriveFont(Font.BOLD, 16f));
 
+        // Tooltips
+        firstField.setToolTipText("First name (letters, spaces, - and ' allowed)");
+        lastField.setToolTipText("Last name (letters, spaces, - and ' allowed)");
+        dobField.setToolTipText("Date of Birth in yyyy-MM-dd (e.g., 1990-05-04, not in the future)");
+
         // Form
         JPanel form = new JPanel(new GridBagLayout());
         form.setBorder(BorderFactory.createEmptyBorder(10, 16, 10, 16));
         GridBagConstraints gc = new GridBagConstraints();
-        gc.gridx = 0; gc.gridy = 0; gc.insets = new Insets(4, 4, 4, 8); gc.anchor = GridBagConstraints.LINE_END;
+        gc.gridx = 0; gc.gridy = 0; gc.insets = new Insets(6, 4, 6, 8); gc.anchor = GridBagConstraints.LINE_END;
         form.add(new JLabel("First Name:"), gc);
         gc.gridy++;
         form.add(new JLabel("Last Name:"), gc);
@@ -93,7 +103,6 @@ public class SeatEditorDialog extends JDialog {
     }
 
     private void loadExistingValues() {
-        // Look up current seat to prefill fields if BOOKED
         List<Seat> seats = db.getSeats(flightId);
         for (Seat s : seats) {
             if (seatNumber.equalsIgnoreCase(s.getSeatNumber())) {
@@ -107,11 +116,11 @@ public class SeatEditorDialog extends JDialog {
                     dobField.setText("");
                 }
 
-                // Release Seat always start unchecked (scheduler must intentionally choose to release)
+                // Always start unchecked; user must intentionally release
                 releaseCheck.setSelected(false);
                 toggleReleaseMode();
 
-                // Reflect current status in the dialog title
+                // Show status in title
                 setTitle("Edit Seat – " + seatNumber + " / " + flightNumber + " [" + (s.isBooked() ? "BOOKED" : "AVAILABLE") + "]");
                 break;
             }
@@ -120,24 +129,32 @@ public class SeatEditorDialog extends JDialog {
 
     private void toggleReleaseMode() {
         boolean releasing = releaseCheck.isSelected();
-        firstField.setEnabled(!releasing);
-        lastField.setEnabled(!releasing);
-        dobField.setEnabled(!releasing);
-        if (releasing) {
-            // dim placeholders when releasing (optional UX)
-            firstField.putClientProperty("JComponent.outline", "warning");
-            lastField.putClientProperty("JComponent.outline", "warning");
-            dobField.putClientProperty("JComponent.outline", "warning");
-        } else {
-            firstField.putClientProperty("JComponent.outline", null);
-            lastField.putClientProperty("JComponent.outline", null);
-            dobField.putClientProperty("JComponent.outline", null);
-        }
+        setFieldEnabled(firstField, !releasing);
+        setFieldEnabled(lastField, !releasing);
+        setFieldEnabled(dobField, !releasing);
+        if (!releasing) clearInvalidHighlights(); // reset if user re-enables fields
+    }
+
+    private void setFieldEnabled(JTextField field, boolean enabled) {
+        field.setEnabled(enabled);
+        field.setBackground(enabled ? normalBg : UIManager.getColor("Panel.background"));
+    }
+
+    private void clearInvalidHighlights() {
+        firstField.setBackground(normalBg);
+        lastField.setBackground(normalBg);
+        dobField.setBackground(normalBg);
+    }
+
+    private void markInvalid(JTextField field, String message) {
+        field.setBackground(invalidBg);
+        field.requestFocusInWindow();
+        JOptionPane.showMessageDialog(this, message, "Validation", JOptionPane.WARNING_MESSAGE);
     }
 
     private void onSave() {
+        // Path 1: explicit release
         if (releaseCheck.isSelected()) {
-            // RELEASE seat
             boolean ok = db.releaseSeat(flightId, seatNumber);
             if (!ok) {
                 JOptionPane.showMessageDialog(this, "Failed to release seat. Please try again.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -147,37 +164,44 @@ public class SeatEditorDialog extends JDialog {
             return;
         }
 
-        // BOOK seat: validate fields
+        // Path 2: implicit release if all fields empty
         String first = firstField.getText().trim();
         String last  = lastField.getText().trim();
         String dob   = dobField.getText().trim();
 
-        if (first.isEmpty() || last.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "First and Last name are required when booking a seat.", "Validation", JOptionPane.WARNING_MESSAGE);
+        if (first.isEmpty() && last.isEmpty() && dob.isEmpty()) {
+            boolean ok = db.releaseSeat(flightId, seatNumber);
+            if (!ok) {
+                JOptionPane.showMessageDialog(this, "Failed to mark seat AVAILABLE. Please try again.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            dispose();
             return;
         }
-        if (!isValidIsoDate(dob)) {
-            JOptionPane.showMessageDialog(this, "Date of Birth must be a valid date in yyyy-MM-dd format (e.g., 1990-05-04).", "Validation", JOptionPane.WARNING_MESSAGE);
+
+        // Path 3: booking
+        clearInvalidHighlights();
+
+        if (!ValidationUtils.isValidName(first)) {
+            markInvalid(firstField, "Please enter a valid first name (letters, spaces, apostrophes, and hyphens allowed).");
+            return;
+        }
+        if (!ValidationUtils.isValidName(last)) {
+            markInvalid(lastField, "Please enter a valid last name (letters, spaces, apostrophes, and hyphens allowed).");
+            return;
+        }
+        if (!ValidationUtils.isValidDobIso(dob)) {
+            markInvalid(dobField, "Date of Birth must be yyyy-MM-dd, a real date, and not in the future (e.g., 1990-05-04).");
             return;
         }
 
         Passenger p = new Passenger(first, last, dob);
-        boolean ok = db.bookSeat(flightId, seatNumber, p); // autosaves inside DatabaseService
+        boolean ok = db.bookSeat(flightId, seatNumber, p); // autosaves
         if (!ok) {
             JOptionPane.showMessageDialog(this, "Failed to book seat. Please try again.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
         dispose();
-    }
-
-    private boolean isValidIsoDate(String s) {
-        if (s == null || !s.matches("\\d{4}-\\d{2}-\\d{2}")) return false;
-        try {
-            LocalDate.parse(s); // ensures it's a real date (e.g., not 2025-02-30)
-            return true;
-        } catch (DateTimeParseException ex) {
-            return false;
-        }
     }
 
     private void wireKeyShortcuts() {
