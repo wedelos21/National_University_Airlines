@@ -2,10 +2,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.KeyEvent;
 
-/**
- * Home screen showing all flights. Selecting a flight opens SeatsFrame.
- */
 public class HomeFrame extends JFrame {
     private final DatabaseService db;
     private final DefaultListModel<Flight> listModel = new DefaultListModel<>();
@@ -15,20 +13,50 @@ public class HomeFrame extends JFrame {
     public HomeFrame(DatabaseService db) {
         super("National University Airlines");
         this.db = db;
+        setJMenuBar(buildMenuBar());                // <-- Menu bar
         initComponents();
-        loadFlights(); // ✅ Automatically load data when home screen is created
+        loadFlights();
         setSize(640, 400);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
+    private JMenuBar buildMenuBar() {
+        JMenuBar bar = new JMenuBar();
+        JMenu file = new JMenu("File");
+        file.setMnemonic('F');
+
+        JMenuItem exit = new JMenuItem("Exit");
+        exit.setMnemonic('E');
+        // Ctrl+Q Shortcut Quit Key
+        int mask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        exit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, mask));
+        exit.addActionListener(e -> confirmAndExit());
+
+        file.add(exit);
+        bar.add(file);
+        return bar;
+    }
+
+    private void confirmAndExit() {
+        int choice = JOptionPane.showConfirmDialog(
+                this,
+                "Exit National University Airlines?",
+                "Confirm Exit",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+        );
+        if (choice == JOptionPane.YES_OPTION) {
+            dispose();
+            System.exit(0);
+        }
+    }
+
     private void initComponents() {
-        // Header
         JLabel header = new JLabel("National University Airlines", SwingConstants.CENTER);
         header.setFont(header.getFont().deriveFont(Font.BOLD, 24f));
         header.setBorder(BorderFactory.createEmptyBorder(16, 16, 8, 16));
 
-        // Flight list config
         flightList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         flightList.setVisibleRowCount(12);
         flightList.setCellRenderer(new DefaultListCellRenderer() {
@@ -43,14 +71,12 @@ public class HomeFrame extends JFrame {
             }
         });
 
-        // Double-click to open
         flightList.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) openSelectedFlight();
             }
         });
 
-        // Buttons
         openBtn.addActionListener(e -> openSelectedFlight());
         JButton refreshBtn = new JButton("Refresh");
         refreshBtn.addActionListener(e -> reloadFromDisk());
@@ -59,7 +85,6 @@ public class HomeFrame extends JFrame {
         buttons.add(refreshBtn);
         buttons.add(openBtn);
 
-        // Layout
         JPanel center = new JPanel(new BorderLayout(8, 8));
         center.setBorder(BorderFactory.createEmptyBorder(8, 16, 16, 16));
         center.add(new JScrollPane(flightList), BorderLayout.CENTER);
@@ -77,7 +102,6 @@ public class HomeFrame extends JFrame {
         if (!listModel.isEmpty()) {
             flightList.setSelectedIndex(0);
         } else {
-            //  Message if database.txt had no flights
             JOptionPane.showMessageDialog(
                 this,
                 "No flights were loaded.\nA default database will be created when you first save.",
@@ -87,7 +111,6 @@ public class HomeFrame extends JFrame {
         }
     }
 
-    /** Reloads from database.txt. */
     private void reloadFromDisk() {
         db.load();
         loadFlights();
@@ -99,12 +122,8 @@ public class HomeFrame extends JFrame {
             JOptionPane.showMessageDialog(this, "Please select a flight.", "No selection", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-
-        // Open Seats screen
         SeatsFrame seats = new SeatsFrame(db, selected.getId(), selected.getFlightNumber());
         seats.setVisible(true);
-
-        // Close home after navigating
         this.dispose();
     }
 }

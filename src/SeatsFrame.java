@@ -3,14 +3,9 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.KeyEvent;
 import java.util.List;
 
-/**
- * SeatsFrame
- * - Displays seats for the selected flight in a table
- * - Open editor on button or double-click
- * - Back to Home
- */
 public class SeatsFrame extends JFrame {
     private final DatabaseService db;
     private final String flightId;
@@ -28,7 +23,8 @@ public class SeatsFrame extends JFrame {
         this.flightId = flightId;
         this.flightNumber = flightNumber;
 
-        // Table model (non-editable cells)
+        setJMenuBar(buildMenuBar());               // <-- Menu bar
+
         model = new DefaultTableModel(new Object[]{"Seat", "Status", "Passenger", "DOB"}, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
@@ -45,13 +41,41 @@ public class SeatsFrame extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 
+    private JMenuBar buildMenuBar() {
+        JMenuBar bar = new JMenuBar();
+        JMenu file = new JMenu("File");
+        file.setMnemonic('F');
+
+        JMenuItem exit = new JMenuItem("Exit");
+        exit.setMnemonic('E');
+        int mask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        exit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, mask));
+        exit.addActionListener(e -> confirmAndExit());
+
+        file.add(exit);
+        bar.add(file);
+        return bar;
+    }
+
+    private void confirmAndExit() {
+        int choice = JOptionPane.showConfirmDialog(
+                this,
+                "Exit National University Airlines?",
+                "Confirm Exit",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+        );
+        if (choice == JOptionPane.YES_OPTION) {
+            dispose();
+            System.exit(0);
+        }
+    }
+
     private void initComponents() {
-        // Header
         JLabel header = new JLabel("Flight " + flightNumber + " (" + flightId + ")", SwingConstants.CENTER);
         header.setFont(header.getFont().deriveFont(Font.BOLD, 20f));
         header.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
-        // Actions
         editBtn.setEnabled(false);
         editBtn.addActionListener(e -> openEditorForSelected());
 
@@ -62,14 +86,12 @@ public class SeatsFrame extends JFrame {
 
         refreshBtn.addActionListener(e -> loadSeats());
 
-        // Enable Edit button when a row is selected
         table.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 editBtn.setEnabled(table.getSelectedRow() >= 0);
             }
         });
 
-        // Double-click row to open editor
         table.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2 && table.getSelectedRow() >= 0) {
@@ -91,9 +113,7 @@ public class SeatsFrame extends JFrame {
     }
 
     private void loadSeats() {
-        // Clear table
         model.setRowCount(0);
-
         List<Seat> seats = db.getSeats(flightId);
         for (Seat s : seats) {
             String name = s.getPassenger() == null ? "" : s.getPassenger().getFullName();
@@ -109,11 +129,8 @@ public class SeatsFrame extends JFrame {
         int row = table.convertRowIndexToModel(viewRow);
         String seatNumber = (String) model.getValueAt(row, 0);
 
-        // Open the (temporary) editor; Issue #9 will implement full editing & save
         SeatEditorDialog dlg = new SeatEditorDialog(this, db, flightId, flightNumber, seatNumber);
         dlg.openModal();
-
-        // After dialog closes, refresh view (later this will reflect changes)
         loadSeats();
     }
 }
