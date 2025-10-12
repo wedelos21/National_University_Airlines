@@ -3,20 +3,26 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.KeyEvent;
+import java.lang.reflect.Method;
 
+/**
+ * Home screen showing all flights. Selecting a flight opens SeatsFrame.
+ * Adds: Delete Flight (with confirm). Uses reflection so it compiles before #16.
+ */
 public class HomeFrame extends JFrame {
     private final DatabaseService db;
     private final DefaultListModel<Flight> listModel = new DefaultListModel<>();
     private final JList<Flight> flightList = new JList<>(listModel);
     private final JButton openBtn = new JButton("Open Flight");
+    private final JButton deleteBtn = new JButton("Delete Flight"); // NEW
 
     public HomeFrame(DatabaseService db) {
         super("National University Airlines");
         this.db = db;
-        setJMenuBar(buildMenuBar());                // <-- Menu bar
+        setJMenuBar(buildMenuBar());
         initComponents();
         loadFlights();
-        setSize(640, 400);
+        setSize(680, 420);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
@@ -28,7 +34,6 @@ public class HomeFrame extends JFrame {
 
         JMenuItem exit = new JMenuItem("Exit");
         exit.setMnemonic('E');
-        // Ctrl+Q Shortcut Quit Key
         int mask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
         exit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, mask));
         exit.addActionListener(e -> confirmAndExit());
@@ -53,10 +58,12 @@ public class HomeFrame extends JFrame {
     }
 
     private void initComponents() {
+        // Header
         JLabel header = new JLabel("National University Airlines", SwingConstants.CENTER);
         header.setFont(header.getFont().deriveFont(Font.BOLD, 24f));
         header.setBorder(BorderFactory.createEmptyBorder(16, 16, 8, 16));
 
+        // Flight list config
         flightList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         flightList.setVisibleRowCount(12);
         flightList.setCellRenderer(new DefaultListCellRenderer() {
@@ -71,20 +78,35 @@ public class HomeFrame extends JFrame {
             }
         });
 
+        // Double-click to open
         flightList.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) openSelectedFlight();
             }
         });
 
+        // Buttons
         openBtn.addActionListener(e -> openSelectedFlight());
+
         JButton refreshBtn = new JButton("Refresh");
         refreshBtn.addActionListener(e -> reloadFromDisk());
 
+        deleteBtn.setEnabled(false); // enabled only when a flight is selected
+        deleteBtn.addActionListener(e -> deleteSelectedFlight());
+
+        // Enable/disable Delete based on selection
+        flightList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                deleteBtn.setEnabled(flightList.getSelectedIndex() >= 0);
+            }
+        });
+
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttons.add(refreshBtn);
+        buttons.add(deleteBtn);
         buttons.add(openBtn);
 
+        // Layout
         JPanel center = new JPanel(new BorderLayout(8, 8));
         center.setBorder(BorderFactory.createEmptyBorder(8, 16, 16, 16));
         center.add(new JScrollPane(flightList), BorderLayout.CENTER);
@@ -111,6 +133,7 @@ public class HomeFrame extends JFrame {
         }
     }
 
+    /** Reloads from database.txt */
     private void reloadFromDisk() {
         db.load();
         loadFlights();
@@ -125,5 +148,48 @@ public class HomeFrame extends JFrame {
         SeatsFrame seats = new SeatsFrame(db, selected.getId(), selected.getFlightNumber());
         seats.setVisible(true);
         this.dispose();
+    }
+
+    // -------- Delete Flight flow --------
+    private void deleteSelectedFlight() {
+        Flight selected = flightList.getSelectedValue();
+        if (selected == null) {
+            JOptionPane.showMessageDialog(this, "Please select a flight to delete.", "No selection", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Delete flight " + selected.getFlightNumber() + " (" + selected.getId() + ") and ALL its seats?\nThis cannot be undone.",
+                "Confirm Delete Flight",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        // Runtime check
+        try {
+            Method m = DatabaseService.class.getMethod("deleteFlight", String.class);
+            Object result = m.invoke(db, selected.getId());
+            boolean ok = (result instanceof Boolean) ? (Boolean) result : false;
+            if (!ok) {
+                JOptionPane.showMessageDialog(this, "Delete failed. The flight may not exist or could not be removed.", "Delete Flight", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            // Reload and update selection
+            reloadFromDisk();
+            JOptionPane.showMessageDialog(this, "Flight deleted.", "Delete Flight", JOptionPane.INFORMATION_MESSAGE);
+        } catch (NoSuchMethodException nsme) {
+            // Backend not added yet (Issue #16)
+            JOptionPane.showMessageDialog(
+                this,
+                "Delete will be enabled after backend wiring (Issue #16).\nFor now, this is a placeholder action.",
+                "Delete Flight (Pending Backend)",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "An unexpected error occurred while deleting the flight:\n" + ex.getMessage(),
+                    "Delete Flight", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
