@@ -25,7 +25,8 @@ public class Seat {
     /** Create a seat that is BOOKED if passenger is provided, otherwise AVAILABLE. */
     public Seat(String seatNumber, Passenger passenger) {
         this(seatNumber);
-        setPassenger(passenger); // will set status accordingly
+        this.passenger = passenger;
+        this.status = (passenger == null) ? SeatStatus.AVAILABLE : SeatStatus.BOOKED;
     }
 
     public String getSeatNumber() { return seatNumber; }
