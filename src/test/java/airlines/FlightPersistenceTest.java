@@ -17,6 +17,7 @@ public class FlightPersistenceTest {
     private DatabaseService db;
     private String dbFile;
 
+    @SuppressWarnings("unused")
     @BeforeEach
     void setUp() {
         dbFile = tempDir.resolve("database.txt").toString(); // DatabaseService expects a String path
