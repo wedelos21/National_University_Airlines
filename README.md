@@ -53,8 +53,8 @@ Developed collaboratively as part of a group assignment to demonstrate modular d
 | #16 | DatabaseService: add/delete APIs + seat generation | 👤 In Review |
 | #17 | Validation Rules for Flight Creation | 👤 In Review |
 | #18 | HomFrame: Integrate "Add Flight" and "Delete Flight" | 👤 In Review |
-| #19 | Autoload on app launch | 🚧 Backlog |
-| #20 | Autoload on app launch | 🚧 Backlog |
+| #19 | FileStorage Compatibility Check | 🚧 Backlog |
+| #20 | README & Screenshots Update | 🚧 Backlog |
 
 ---
 
