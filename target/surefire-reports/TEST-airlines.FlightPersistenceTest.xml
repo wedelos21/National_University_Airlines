@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="airlines.FlightPersistenceTest" time="0.067" tests="2" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="airlines.FlightPersistenceTest" time="0.066" tests="2" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="25"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -15,7 +15,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="US"/>
     <property name="sun.boot.library.path" value="C:\Program Files\Eclipse Adoptium\jdk-25.0.0.36-hotspot\bin"/>
-    <property name="sun.java.command" value="C:\Users\mark_\AppData\Local\Temp\surefire1878021059717680835\surefirebooter-20251012194602296_3.jar C:\Users\mark_\AppData\Local\Temp\surefire1878021059717680835 2025-10-12T19-46-02_202-jvmRun1 surefire-20251012194602296_1tmp surefire_0-20251012194602296_2tmp"/>
+    <property name="sun.java.command" value="C:\Users\mark_\AppData\Local\Temp\surefire3054026748415811095\surefirebooter-20251013085033405_3.jar C:\Users\mark_\AppData\Local\Temp\surefire3054026748415811095 2025-10-13T08-50-33_313-jvmRun1 surefire-20251013085033405_1tmp surefire_0-20251013085033405_2tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="C:\Users\mark_\OneDrive\Desktop\CSC449\National University Airlines\National_University_Airlines\target\test-classes;C:\Users\mark_\OneDrive\Desktop\CSC449\National University Airlines\National_University_Airlines\target\classes;C:\Users\mark_\.m2\repository\org\junit\jupiter\junit-jupiter\5.10.2\junit-jupiter-5.10.2.jar;C:\Users\mark_\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.10.2\junit-jupiter-api-5.10.2.jar;C:\Users\mark_\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\mark_\.m2\repository\org\junit\platform\junit-platform-commons\1.10.2\junit-platform-commons-1.10.2.jar;C:\Users\mark_\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\mark_\.m2\repository\org\junit\jupiter\junit-jupiter-params\5.10.2\junit-jupiter-params-5.10.2.jar;C:\Users\mark_\.m2\repository\org\junit\jupiter\junit-jupiter-engine\5.10.2\junit-jupiter-engine-5.10.2.jar;C:\Users\mark_\.m2\repository\org\junit\platform\junit-platform-engine\1.10.2\junit-platform-engine-1.10.2.jar;C:\Users\mark_\.m2\repository\org\mockito\mockito-core\5.12.0\mockito-core-5.12.0.jar;C:\Users\mark_\.m2\repository\net\bytebuddy\byte-buddy\1.14.15\byte-buddy-1.14.15.jar;C:\Users\mark_\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.15\byte-buddy-agent-1.14.15.jar;C:\Users\mark_\.m2\repository\org\objenesis\objenesis\3.3\objenesis-3.3.jar;"/>
     <property name="sun.cpu.endian" value="little"/>
@@ -30,7 +30,7 @@
     <property name="line.separator" value="&#10;"/>
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
-    <property name="surefire.real.class.path" value="C:\Users\mark_\AppData\Local\Temp\surefire1878021059717680835\surefirebooter-20251012194602296_3.jar"/>
+    <property name="surefire.real.class.path" value="C:\Users\mark_\AppData\Local\Temp\surefire3054026748415811095\surefirebooter-20251013085033405_3.jar"/>
     <property name="user.script" value=""/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="25+36-LTS"/>
@@ -60,19 +60,19 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="69.0"/>
   </properties>
-  <testcase name="addFlight_duplicateId_isRejectedAndSizeUnchanged" classname="airlines.FlightPersistenceTest" time="0.048">
-    <system-out><![CDATA[[FileStorage] C:\Users\mark_\AppData\Local\Temp\junit14586214352866997645\database.txt not found. Creating default database...
-[FileStorage] Saved 2 flights to C:\Users\mark_\AppData\Local\Temp\junit14586214352866997645\database.txt
-[FileStorage] Loaded 2 flights from C:\Users\mark_\AppData\Local\Temp\junit14586214352866997645\database.txt
-[FileStorage] Saved 3 flights to C:\Users\mark_\AppData\Local\Temp\junit14586214352866997645\database.txt
+  <testcase name="addFlight_duplicateId_isRejectedAndSizeUnchanged" classname="airlines.FlightPersistenceTest" time="0.047">
+    <system-out><![CDATA[[FileStorage] C:\Users\mark_\AppData\Local\Temp\junit14608684748811327368\database.txt not found. Creating default database...
+[FileStorage] Saved 2 flights to C:\Users\mark_\AppData\Local\Temp\junit14608684748811327368\database.txt
+[FileStorage] Loaded 2 flights from C:\Users\mark_\AppData\Local\Temp\junit14608684748811327368\database.txt
+[FileStorage] Saved 3 flights to C:\Users\mark_\AppData\Local\Temp\junit14608684748811327368\database.txt
 [DatabaseService] addFlight: duplicate flightId T200
 ]]></system-out>
   </testcase>
   <testcase name="addFlight_uniqueId_increasesCount" classname="airlines.FlightPersistenceTest" time="0.004">
-    <system-out><![CDATA[[FileStorage] C:\Users\mark_\AppData\Local\Temp\junit1532419509568374915\database.txt not found. Creating default database...
-[FileStorage] Saved 2 flights to C:\Users\mark_\AppData\Local\Temp\junit1532419509568374915\database.txt
-[FileStorage] Loaded 2 flights from C:\Users\mark_\AppData\Local\Temp\junit1532419509568374915\database.txt
-[FileStorage] Saved 3 flights to C:\Users\mark_\AppData\Local\Temp\junit1532419509568374915\database.txt
+    <system-out><![CDATA[[FileStorage] C:\Users\mark_\AppData\Local\Temp\junit7952977216848165652\database.txt not found. Creating default database...
+[FileStorage] Saved 2 flights to C:\Users\mark_\AppData\Local\Temp\junit7952977216848165652\database.txt
+[FileStorage] Loaded 2 flights from C:\Users\mark_\AppData\Local\Temp\junit7952977216848165652\database.txt
+[FileStorage] Saved 3 flights to C:\Users\mark_\AppData\Local\Temp\junit7952977216848165652\database.txt
 ]]></system-out>
   </testcase>
 </testsuite>
