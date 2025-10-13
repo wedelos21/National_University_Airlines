@@ -54,7 +54,7 @@ Developed collaboratively as part of a group assignment to demonstrate modular d
 | #17 | Validation Rules for Flight Creation | 👤 In Review |
 | #18 | HomFrame: Integrate "Add Flight" and "Delete Flight" | 👤 In Review |
 | #19 | FileStorage Compatibility Check | 🚧 Backlog |
-| #20 | README & Screenshots Update | 🚧 Backlog |
+| #20 | README & Screenshots Update | 🚧 Backlog | 
 
 ---
 
